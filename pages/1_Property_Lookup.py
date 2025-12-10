@@ -1,72 +1,87 @@
 import streamlit as st
 import requests
+from bs4 import BeautifulSoup
 
 st.set_page_config(layout="wide")
 
-st.title("🏡 Property Lookup — Free Data Scraper")
-st.caption("Search by Address or MLS — pulls FREE data from Redfin (no API needed!)")
+st.title("🏠 Property Lookup — Free Data Scraper")
+st.caption("Pulls FREE property data from Realtor.com (No API Needed)")
 
-# ---------------------------
-# Redfin Scraper
-# ---------------------------
-
-def scrape_redfin(address):
+# --------------------------------------
+# Function: Realtor Scraper
+# --------------------------------------
+def scrape_realtor(address):
     try:
-        url = f"https://www.redfin.com/stingray/api/gis?location={address}&num_homes=1"
+        # Convert address into URL-friendly format
+        query = address.replace(" ", "-").replace(",", "")
+        url = f"https://www.realtor.com/realestateandhomes-search/{query}"
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Accept": "application/json,text/plain,*/*"
+            "Accept-Language": "en-US,en;q=0.9",
         }
 
-        r = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
 
-        if r.status_code != 200:
+        if response.status_code != 200:
             return None
 
-        data = r.json()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        if not data.get("homes"):
-            return None
+        # Extract price
+        price_tag = soup.select_one("[data-testid='price']")
+        price = price_tag.text.strip() if price_tag else "N/A"
 
-        home = data["homes"][0]
+        # Extract beds
+        beds_tag = soup.select_one("[data-testid='beds']")
+        beds = beds_tag.text.strip() if beds_tag else "N/A"
+
+        # Extract baths
+        baths_tag = soup.select_one("[data-testid='baths']")
+        baths = baths_tag.text.strip() if baths_tag else "N/A"
+
+        # Extract square feet
+        sqft_tag = soup.select_one("[data-testid='sqft']")
+        sqft = sqft_tag.text.strip() if sqft_tag else "N/A"
+
+        # Extract year built (from property highlights)
+        year_built = "N/A"
+        details = soup.find_all("li")
+        for d in details:
+            if "Built" in d.text:
+                year_built = d.text.replace("Built", "").strip()
+                break
 
         return {
-            "price": home.get("price"),
-            "beds": home.get("beds"),
-            "baths": home.get("baths"),
-            "sqft": home.get("sqft"),
-            "lot": home.get("lotSize"),
-            "year_built": home.get("yearBuilt"),
+            "price": price,
+            "beds": beds,
+            "baths": baths,
+            "sqft": sqft,
+            "year_built": year_built,
         }
 
-    except Exception:
+    except Exception as e:
         return None
 
 
-# ---------------------------
-# UI — Search Box
-# ---------------------------
-
-query = st.text_input("Enter Address or MLS Number")
+# --------------------------------------
+# UI
+# --------------------------------------
+address = st.text_input("Enter Full Address", "")
 
 if st.button("Search Property"):
-    if not query:
-        st.error("Please enter an address or MLS.")
-        st.stop()
-
-    st.info("Searching online data… please wait 2–4 seconds ⏳")
-
-    res = scrape_redfin(query)
-
-    if not res:
-        st.error("No data found.")
+    if not address:
+        st.error("Please enter an address.")
     else:
-        st.success("Data found!")
-        st.write("### 📌 Property Info")
-        st.write(f"**Price:** ${res['price']:,}" if res["price"] else "N/A")
-        st.write(f"**Beds:** {res['beds']}")
-        st.write(f"**Baths:** {res['baths']}")
-        st.write(f"**Square Feet:** {res['sqft']}")
-        st.write(f"**Lot Size:** {res['lot']}")
-        st.write(f"**Year Built:** {res['year_built']}")
+        st.info("Searching Realtor.com… please wait 2–4 seconds ⏳")
+
+        data = scrape_realtor(address)
+
+        if not data:
+            st.error("No data found. Try a different address.")
+        else:
+            st.success("Property Found!")
+
+            st.subheader("🏡 Property Details")
+            st.write(f"**Price:** {data['price']}")
+            st.write(f"**Beds:** {data['beds']
