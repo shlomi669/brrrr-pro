@@ -44,7 +44,7 @@ def scrape_realtor(address):
         sqft_tag = soup.select_one("[data-testid='sqft']")
         sqft = sqft_tag.text.strip() if sqft_tag else "N/A"
 
-        # Extract year built (from property highlights)
+        # Extract year built
         year_built = "N/A"
         details = soup.find_all("li")
         for d in details:
@@ -60,14 +60,14 @@ def scrape_realtor(address):
             "year_built": year_built,
         }
 
-    except Exception as e:
+    except Exception:
         return None
 
 
 # --------------------------------------
 # UI
 # --------------------------------------
-address = st.text_input("Enter Full Address", "")
+address = st.text_input("Enter Full Address")
 
 if st.button("Search Property"):
     if not address:
@@ -82,7 +82,8 @@ if st.button("Search Property"):
         else:
             st.success("Property Found!")
 
-                        st.write(f"**Price:** {data['price']}")
+            st.subheader("🏡 Property Details")
+            st.write(f"**Price:** {data['price']}")
             st.write(f"**Beds:** {data['beds']}")
             st.write(f"**Baths:** {data['baths']}")
             st.write(f"**Square Feet:** {data['sqft']}")
