@@ -82,6 +82,8 @@ if st.button("Search Property"):
         else:
             st.success("Property Found!")
 
-            st.subheader("🏡 Property Details")
-            st.write(f"**Price:** {data['price']}")
-            st.write(f"**Beds:** {data['beds']
+                        st.write(f"**Price:** {data['price']}")
+            st.write(f"**Beds:** {data['beds']}")
+            st.write(f"**Baths:** {data['baths']}")
+            st.write(f"**Square Feet:** {data['sqft']}")
+            st.write(f"**Year Built:** {data['year_built']}")
