@@ -4,7 +4,7 @@ import requests
 st.set_page_config(layout="wide")
 
 st.title("🏡 Property Lookup — Free Data Scraper")
-st.caption("Search by Address or MLS — pulls FREE data from Redfin (no API needed)")
+st.caption("Search by Address or MLS — pulls FREE data from Redfin (no API needed!)")
 
 # ---------------------------
 # Redfin Scraper
@@ -43,6 +43,7 @@ def scrape_redfin(address):
     except Exception:
         return None
 
+
 # ---------------------------
 # UI — Search Box
 # ---------------------------
@@ -63,5 +64,9 @@ if st.button("Search Property"):
     else:
         st.success("Data found!")
         st.write("### 📌 Property Info")
-        st.write(f"**Price:** ${r
-
+        st.write(f"**Price:** ${res['price']:,}" if res["price"] else "N/A")
+        st.write(f"**Beds:** {res['beds']}")
+        st.write(f"**Baths:** {res['baths']}")
+        st.write(f"**Square Feet:** {res['sqft']}")
+        st.write(f"**Lot Size:** {res['lot']}")
+        st.write(f"**Year Built:** {res['year_built']}")
