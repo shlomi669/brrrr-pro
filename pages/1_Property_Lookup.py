@@ -64,7 +64,30 @@ if st.button("📌 Create Snapshot"):
     if not address:
         st.error("Please enter at least an address.")
     else:
-        st.success("Snapshot created ✅")
+        from utils.storage import save_property_snapshot
+
+# Prepare data to save
+snapshot_data = {
+    "address": address,
+    "mls": mls,
+    "type": property_type,
+    "beds": beds,
+    "baths": baths,
+    "sqft": sqft,
+    "lot_size": lot_size,
+    "year_built": year_built,
+    "list_price": list_price,
+    "rent_est": rent_est,
+    "taxes_year": taxes_year,
+    "price_per_sqft": price_per_sqft,
+    "rent_to_price": rent_to_price,
+}
+
+# Save snapshot using address as file name
+filename = save_property_snapshot(address.replace(" ", "_"), snapshot_data)
+
+st.success(f"Snapshot saved successfully! 📁 ({filename})")
+
 
         # SUMMARY METRICS
         col_m1, col_m2, col_m3 = st.columns(3)
