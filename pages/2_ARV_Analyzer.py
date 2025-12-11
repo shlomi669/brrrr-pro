@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import os
+from utils.ask_ai import ASK_AI
 
 st.set_page_config(layout="wide")
 
@@ -26,7 +28,7 @@ with col2:
 st.markdown("---")
 
 # -----------------------------
-# COMPS TABLE
+# COMPARABLE SALES SECTION
 # -----------------------------
 st.subheader("🏘 Comparable Sales (Manual Input)")
 
@@ -70,54 +72,45 @@ st.subheader("📈 ARV Calculation")
 if st.button("Calculate ARV"):
     df = comps_df.copy()
 
-    # Clean & convert
+    # Cleaning & converting
     df["Sale Price"] = pd.to_numeric(df["Sale Price"], errors="coerce")
     df["Sqft"] = pd.to_numeric(df["Sqft"], errors="coerce")
     df["Distance (miles)"] = pd.to_numeric(df["Distance (miles)"], errors="coerce")
 
-    # Parse dates
     df["Sale Date (YYYY-MM-DD)"] = pd.to_datetime(
         df["Sale Date (YYYY-MM-DD)"], errors="coerce"
     )
 
-    # Drop empty rows (no price or no sqft)
     df = df.dropna(subset=["Sale Price", "Sqft"])
 
     if df.empty:
         st.error("No valid comps entered (need Sale Price & Sqft at minimum).")
     else:
-        # Price per sqft
         df["Price per Sqft"] = df["Sale Price"] / df["Sqft"]
 
-        # Filter by last 12 months
         today = datetime.today()
         last_12_months = today - timedelta(days=365)
         df_recent = df[df["Sale Date (YYYY-MM-DD)"] >= last_12_months]
 
-        # Filter by radius <= 0.7 miles
         df_recent_radius = df_recent[df_recent["Distance (miles)"] <= 0.7]
 
-        # If too few comps, relax conditions
         filtered_df = df_recent_radius
+        flags = []
 
-        msg = []
         if len(filtered_df) < 3:
-            msg.append("Less than 3 comps within 12 months and 0.7 miles.")
-            # Try: keep 12 months but ignore radius
+            flags.append("Less than 3 comps within 12 months and 0.7 miles — expanding radius.")
             filtered_df = df_recent
+
         if len(filtered_df) < 3:
-            msg.append("Still less than 3 comps – using ALL entered comps as backup.")
+            flags.append("Still less than 3 comps — using ALL comps as fallback.")
             filtered_df = df
 
-        if msg:
-            for m in msg:
-                st.warning(m)
+        for f in flags:
+            st.warning(f)
 
-        # If still empty, nothing to do
         if filtered_df.empty:
             st.error("No comps available after filtering. Please add more data.")
         else:
-            # ARV based on price per sqft
             median_ppsqft = filtered_df["Price per Sqft"].median()
             avg_ppsqft = filtered_df["Price per Sqft"].mean()
             min_ppsqft = filtered_df["Price per Sqft"].min()
@@ -131,29 +124,28 @@ if st.button("Calculate ARV"):
             else:
                 arv_median = arv_avg = arv_low = arv_high = 0
 
-            # Display metrics
             colA, colB, colC, colD = st.columns(4)
             colA.metric("Median $/sqft", f"${median_ppsqft:,.0f}")
-            colB.metric("Avg $/sqft", f"${avg_ppsqft:,.0f}")
+            colB.metric("Average $/sqft", f"${avg_ppsqft:,.0f}")
             colC.metric("Min $/sqft", f"${min_ppsqft:,.0f}")
             colD.metric("Max $/sqft", f"${max_ppsqft:,.0f}")
 
             st.markdown("---")
-            st.subheader("🏁 ARV Estimates (Subject Property)")
+            st.subheader("🏁 ARV Estimates")
 
             if subject_sqft <= 0:
-                st.error("To calculate ARV, please enter Subject Living Area (sqft) above.")
+                st.error("To calculate ARV, please enter Subject Living Area (sqft).")
             else:
                 col1, col2 = st.columns(2)
                 with col1:
                     st.metric("ARV (Median $/sqft)", f"${arv_median:,.0f}")
                     st.metric("ARV (Average $/sqft)", f"${arv_avg:,.0f}")
                 with col2:
-                    st.metric("ARV Low (Min $/sqft)", f"${arv_low:,.0f}")
-                    st.metric("ARV High (Max $/sqft)", f"${arv_high:,.0f}")
+                    st.metric("ARV Low", f"${arv_low:,.0f}")
+                    st.metric("ARV High", f"${arv_high:,.0f}")
 
             st.markdown("---")
-            st.subheader("📋 Filtered Comps Used for ARV")
+            st.subheader("📋 Comps Used")
 
             show_cols = [
                 "Address",
@@ -174,3 +166,27 @@ if st.button("Calculate ARV"):
                 ),
                 use_container_width=True,
             )
+
+# ---------------------------------------------------------
+# 🤖 ASK AI – Smart Property Assistant
+# ---------------------------------------------------------
+st.markdown("---")
+st.subheader("🤖 Ask AI About This Property")
+
+ai_prompt = st.text_input(
+    "What do you want to analyze?",
+    placeholder="Example: 'Give me ARV and comps for 1327 Northlea Dr, South Bend, IN'"
+)
+
+if st.button("Ask AI"):
+    if not ai_prompt:
+        st.error("Please type a question first.")
+    else:
+        st.info("AI is analyzing… please wait 4–8 seconds ⏳")
+        result = ASK_AI(ai_prompt)
+
+        if "error" in result:
+            st.error("AI Error:")
+            st.write(result)
+        else:
+            st.json(result)
