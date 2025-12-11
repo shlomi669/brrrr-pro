@@ -1,17 +1,5 @@
-import streamlit as st
 import json
 import openai
-
-# -----------------------------------------------------------
-# ASK_AI — Core Engine
-# -----------------------------------------------------------
-# Sends an address to the AI engine and returns structured JSON:
-# - Property details
-# - Comparable sales
-# - ARV calculation
-# - Rehab estimate
-# - Neighborhood analysis
-# -----------------------------------------------------------
 
 def ASK_AI(address):
     """
@@ -50,17 +38,12 @@ def ASK_AI(address):
             ]
         )
     except Exception as e:
-        st.error("OpenAI API error")
-        st.error(str(e))
-        return None
+        return {"error": str(e)}
 
     raw = response.choices[0].message["content"]
 
-    # Attempt to parse content into JSON
+    # Parse JSON safely
     try:
-        data = json.loads(raw)
-        return data
+        return json.loads(raw)
     except:
-        st.error("AI returned invalid JSON. Showing raw output:")
-        st.text(raw)
-        return None
+        return {"error": "Invalid JSON from AI", "raw": raw}
