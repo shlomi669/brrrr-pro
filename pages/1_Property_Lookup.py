@@ -1,72 +1,100 @@
 import streamlit as st
-import requests
+import pandas as pd
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    page_title="Property Lookup – Manual",
+    page_icon="🏠",
+    layout="wide"
+)
 
-st.title("🏠 Property Lookup — Free API Data")
-st.caption("Pulls FREE property data with no scraping + no blocking")
+st.title("🏠 Property Snapshot — Manual Entry (100% Reliable)")
+st.caption("You grab the data from Zillow / Redfin / Realtor, the app organizes & analyzes it.")
 
-# -------------------------------------
-#  GET PROPERTY DATA FROM API
-# -------------------------------------
-def get_property_data(address):
-    try:
-        url = "https://api.openpropertydata.com/v1/address"
-        params = {"q": address}
+st.markdown("---")
 
-        response = requests.get(url, params=params, timeout=10)
+# -----------------------------
+# BASIC INFO
+# -----------------------------
+col_a, col_b = st.columns(2)
+with col_a:
+    address = st.text_input("Full Address")
+with col_b:
+    mls = st.text_input("MLS # (optional)")
 
-        if response.status_code != 200:
-            return None
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    beds = st.number_input("Beds", min_value=0.0, step=0.5)
+with col2:
+    baths = st.number_input("Baths", min_value=0.0, step=0.5)
+with col3:
+    sqft = st.number_input("Living Area (sqft)", min_value=0.0, step=10.0)
+with col4:
+    lot_sqft = st.number_input("Lot Size (sqft)", min_value=0.0, step=100.0)
 
-        data = response.json()
+col5, col6 = st.columns(2)
+with col5:
+    year_built = st.number_input("Year Built", min_value=1800, max_value=2100, step=1, value=1970)
+with col6:
+    property_type = st.selectbox(
+        "Property Type",
+        ["Single Family", "Duplex", "Triplex", "Fourplex", "Condo", "Townhouse", "Other"]
+    )
 
-        if "property" not in data:
-            return None
+st.markdown("---")
 
-        p = data["property"]
+# -----------------------------
+# PRICE & RENT
+# -----------------------------
+col7, col8, col9 = st.columns(3)
+with col7:
+    list_price = st.number_input("List Price ($)", min_value=0.0, step=1000.0)
+with col8:
+    rent_est = st.number_input("Estimated Rent ($/month)", min_value=0.0, step=50.0)
+with col9:
+    taxes_year = st.number_input("Annual Taxes ($)", min_value=0.0, step=100.0)
 
-        return {
-            "price": p.get("price", "N/A"),
-            "beds": p.get("beds", "N/A"),
-            "baths": p.get("baths", "N/A"),
-            "sqft": p.get("sqft", "N/A"),
-            "year_built": p.get("year_built", "N/A"),
-            "zestimate": p.get("zestimate", "N/A"),
-            "last_sold_price": p.get("last_sold_price", "N/A"),
-            "last_sold_date": p.get("last_sold_date", "N/A"),
-            "type": p.get("type", "N/A"),
+# Derived metrics
+price_per_sqft = list_price / sqft if list_price > 0 and sqft > 0 else 0
+price_per_unit = list_price  # for future multi-family
+rent_to_price = (rent_est * 12 / list_price * 100) if list_price > 0 and rent_est > 0 else 0
+
+st.markdown("---")
+
+if st.button("📌 Create Snapshot"):
+    if not address:
+        st.error("Please enter at least an address.")
+    else:
+        st.success("Snapshot created ✅")
+
+        # SUMMARY METRICS
+        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1.metric("💰 List Price", f"${list_price:,.0f}")
+        col_m2.metric("📏 Price / Sqft", f"${price_per_sqft:,.0f}" if price_per_sqft else "N/A")
+        col_m3.metric("🏡 Rent / Price (annual %)", f"{rent_to_price:.1f}%" if rent_to_price else "N/A")
+
+        # TABLE
+        data = {
+            "Field": [
+                "Address", "MLS #", "Type",
+                "Beds", "Baths",
+                "Living Area (sqft)", "Lot Size (sqft)",
+                "Year Built",
+                "List Price ($)", "Estimated Rent ($/month)",
+                "Annual Taxes ($)",
+                "Price / Sqft ($)", "Rent/Price (%)"
+            ],
+            "Value": [
+                address, mls, property_type,
+                beds, baths,
+                sqft, lot_sqft,
+                year_built,
+                list_price, rent_est,
+                taxes_year,
+                round(price_per_sqft, 1) if price_per_sqft else "",
+                round(rent_to_price, 1) if rent_to_price else ""
+            ]
         }
 
-    except:
-        return None
-
-
-# -------------------------------------
-# UI
-# -------------------------------------
-address = st.text_input("Enter Full Address (USA)", "")
-
-if st.button("Search Property"):
-    if not address:
-        st.error("Please enter an address.")
-    else:
-        st.info("Fetching property data… please wait ⏳")
-
-        data = get_property_data(address)
-
-        if not data:
-            st.error("No data found for this address.")
-        else:
-            st.success("Property found! 🎉")
-
-            st.subheader("🏡 Property Details")
-            st.write(f"**Price:** {data['price']}")
-            st.write(f"**Beds:** {data['beds']}")
-            st.write(f"**Baths:** {data['baths']}")
-            st.write(f"**Square Feet:** {data['sqft']}")
-            st.write(f"**Year Built:** {data['year_built']}")
-            st.write(f"**Zestimate:** {data['zestimate']}")
-            st.write(f"**Last Sold Price:** {data['last_sold_price']}")
-            st.write(f"**Last Sold Date:** {data['last_sold_date']}")
-            st.write(f"**Property Type:** {data['type']}")
+        df = pd.DataFrame(data)
+        st.subheader("📋 Property Snapshot")
+        st.dataframe(df, use_container_width=True)
