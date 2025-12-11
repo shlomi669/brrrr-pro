@@ -1,86 +1,64 @@
 import streamlit as st
 import requests
-from bs4 import BeautifulSoup
 
 st.set_page_config(layout="wide")
 
-st.title("🏠 Property Lookup — Free Data Scraper")
-st.caption("Pulls FREE property data from Realtor.com (No API Needed)")
+st.title("🏠 Property Lookup — Free API Data")
+st.caption("Pulls FREE property data with no scraping + no blocking")
 
-# --------------------------------------
-# Function: Realtor Scraper
-# --------------------------------------
-def scrape_realtor(address):
+# -------------------------------------
+#  GET PROPERTY DATA FROM API
+# -------------------------------------
+def get_property_data(address):
     try:
-        # Convert address into URL-friendly format
-        query = address.replace(" ", "-").replace(",", "")
-        url = f"https://www.realtor.com/realestateandhomes-search/{query}"
+        url = "https://api.openpropertydata.com/v1/address"
+        params = {"q": address}
 
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Accept-Language": "en-US,en;q=0.9",
-        }
-
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
 
         if response.status_code != 200:
             return None
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        data = response.json()
 
-        # Extract price
-        price_tag = soup.select_one("[data-testid='price']")
-        price = price_tag.text.strip() if price_tag else "N/A"
+        if "property" not in data:
+            return None
 
-        # Extract beds
-        beds_tag = soup.select_one("[data-testid='beds']")
-        beds = beds_tag.text.strip() if beds_tag else "N/A"
-
-        # Extract baths
-        baths_tag = soup.select_one("[data-testid='baths']")
-        baths = baths_tag.text.strip() if baths_tag else "N/A"
-
-        # Extract square feet
-        sqft_tag = soup.select_one("[data-testid='sqft']")
-        sqft = sqft_tag.text.strip() if sqft_tag else "N/A"
-
-        # Extract year built
-        year_built = "N/A"
-        details = soup.find_all("li")
-        for d in details:
-            if "Built" in d.text:
-                year_built = d.text.replace("Built", "").strip()
-                break
+        p = data["property"]
 
         return {
-            "price": price,
-            "beds": beds,
-            "baths": baths,
-            "sqft": sqft,
-            "year_built": year_built,
+            "price": p.get("price", "N/A"),
+            "beds": p.get("beds", "N/A"),
+            "baths": p.get("baths", "N/A"),
+            "sqft": p.get("sqft", "N/A"),
+            "year_built": p.get("year_built", "N/A"),
+            "zestimate": p.get("zestimate", "N/A"),
+            "last_sold_price": p.get("last_sold_price", "N/A"),
+            "last_sold_date": p.get("last_sold_date", "N/A"),
+            "type": p.get("type", "N/A"),
         }
 
-    except Exception:
+    except:
         return None
 
 
-# --------------------------------------
+# -------------------------------------
 # UI
-# --------------------------------------
-address = st.text_input("Enter Full Address")
+# -------------------------------------
+address = st.text_input("Enter Full Address (USA)", "")
 
 if st.button("Search Property"):
     if not address:
         st.error("Please enter an address.")
     else:
-        st.info("Searching Realtor.com… please wait 2–4 seconds ⏳")
+        st.info("Fetching property data… please wait ⏳")
 
-        data = scrape_realtor(address)
+        data = get_property_data(address)
 
         if not data:
-            st.error("No data found. Try a different address.")
+            st.error("No data found for this address.")
         else:
-            st.success("Property Found!")
+            st.success("Property found! 🎉")
 
             st.subheader("🏡 Property Details")
             st.write(f"**Price:** {data['price']}")
@@ -88,3 +66,7 @@ if st.button("Search Property"):
             st.write(f"**Baths:** {data['baths']}")
             st.write(f"**Square Feet:** {data['sqft']}")
             st.write(f"**Year Built:** {data['year_built']}")
+            st.write(f"**Zestimate:** {data['zestimate']}")
+            st.write(f"**Last Sold Price:** {data['last_sold_price']}")
+            st.write(f"**Last Sold Date:** {data['last_sold_date']}")
+            st.write(f"**Property Type:** {data['type']}")
