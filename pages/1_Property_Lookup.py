@@ -60,64 +60,37 @@ rent_to_price = (rent_est * 12 / list_price * 100) if list_price > 0 and rent_es
 
 st.markdown("---")
 
+# -------------------------------------------------
+# Create Snapshot (Save Property Data)
+# -------------------------------------------------
+
+# -------------------------------------------------
+# Create Snapshot (Save Property Data)
+# -------------------------------------------------
+
 if st.button("📌 Create Snapshot"):
     if not address:
         st.error("Please enter at least an address.")
     else:
         from utils.storage import save_property_snapshot
 
-# Prepare data to save
-snapshot_data = {
-    "address": address,
-    "mls": mls,
-    "type": property_type,
-    "beds": beds,
-    "baths": baths,
-    "sqft": sqft,
-    "lot_size": lot_size,
-    "year_built": year_built,
-    "list_price": list_price,
-    "rent_est": rent_est,
-    "taxes_year": taxes_year,
-    "price_per_sqft": price_per_sqft,
-    "rent_to_price": rent_to_price,
-}
-
-# Save snapshot using address as file name
-filename = save_property_snapshot(address.replace(" ", "_"), snapshot_data)
-st.success(f"Snapshot saved successfully! 📁 ({filename})")
-
-
-
-        # SUMMARY METRICS
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("💰 List Price", f"${list_price:,.0f}")
-        col_m2.metric("📏 Price / Sqft", f"${price_per_sqft:,.0f}" if price_per_sqft else "N/A")
-        col_m3.metric("🏡 Rent / Price (annual %)", f"{rent_to_price:.1f}%" if rent_to_price else "N/A")
-
-        # TABLE
-        data = {
-            "Field": [
-                "Address", "MLS #", "Type",
-                "Beds", "Baths",
-                "Living Area (sqft)", "Lot Size (sqft)",
-                "Year Built",
-                "List Price ($)", "Estimated Rent ($/month)",
-                "Annual Taxes ($)",
-                "Price / Sqft ($)", "Rent/Price (%)"
-            ],
-            "Value": [
-                address, mls, property_type,
-                beds, baths,
-                sqft, lot_sqft,
-                year_built,
-                list_price, rent_est,
-                taxes_year,
-                round(price_per_sqft, 1) if price_per_sqft else "",
-                round(rent_to_price, 1) if rent_to_price else ""
-            ]
+        # Prepare data to save
+        snapshot_data = {
+            "address": address,
+            "mls": mls,
+            "type": property_type,
+            "beds": beds,
+            "baths": baths,
+            "sqft": sqft,
+            "lot_size": lot_size,
+            "year_built": year_built,
+            "list_price": list_price,
+            "rent_est": rent_est,
+            "taxes_year": taxes_year,
+            "price_per_sqft": price_per_sqft,
+            "rent_to_price": rent_to_price,
         }
 
-        df = pd.DataFrame(data)
-        st.subheader("📋 Property Snapshot")
-        st.dataframe(df, use_container_width=True)
+        # Save snapshot using sanitized address as file name
+        filename = save_property_snapshot(address.replace(" ", "_"), snapshot_data)
+        st.success(f"Snapshot saved successfully! 📁 ({filename})")
