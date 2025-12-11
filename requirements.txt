@@ -3,4 +3,5 @@ requests
 pandas
 Pillow
 beautifulsoup4
+openai
 
