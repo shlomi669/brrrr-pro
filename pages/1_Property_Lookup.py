@@ -1,4 +1,4 @@
-import streamlit as st
+mport streamlit as st
 import pandas as pd
 
 st.set_page_config(
@@ -29,7 +29,7 @@ with col2:
 with col3:
     sqft = st.number_input("Living Area (sqft)", min_value=0.0, step=10.0)
 with col4:
-    lot_sqft = st.number_input("Lot Size (sqft)", min_value=0.0, step=100.0)
+    lot_sqft = st.number_input("Lot sqft (sqft)", min_value=0.0, step=100.0)
 
 col5, col6 = st.columns(2)
 with col5:
@@ -82,7 +82,7 @@ if st.button("📌 Create Snapshot"):
             "beds": beds,
             "baths": baths,
             "sqft": sqft,
-            "lot_size": lot_size,
+            "lot_size": lot_sqft,
             "year_built": year_built,
             "list_price": list_price,
             "rent_est": rent_est,
