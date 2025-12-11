@@ -29,7 +29,7 @@ with col2:
 with col3:
     sqft = st.number_input("Living Area (sqft)", min_value=0.0, step=10.0)
 with col4:
-    lot_sqft = st.number_input("Lot sqft (sqft)", min_value=0.0, step=100.0)
+   lot_size = st.number_input("Lot Size (sqft)", min_value=0.0, step=100.0)
 
 col5, col6 = st.columns(2)
 with col5:
