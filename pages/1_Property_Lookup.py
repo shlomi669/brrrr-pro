@@ -85,8 +85,8 @@ snapshot_data = {
 
 # Save snapshot using address as file name
 filename = save_property_snapshot(address.replace(" ", "_"), snapshot_data)
-
 st.success(f"Snapshot saved successfully! 📁 ({filename})")
+
 
 
         # SUMMARY METRICS
